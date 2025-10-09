@@ -21,7 +21,7 @@
       />
 
       <div v-else class="empty-state">
-        <p>Upload a PDF on the left to start a chat.</p>
+        <p>Upload a pdf / doc / markdown on the left to start a chat.</p>
       </div>
     </div>
   </div>

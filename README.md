@@ -15,10 +15,11 @@
 ## 📖 项目简介
 
 本项目使用 `LangChain` + `LangGraph` 构建了一个基于PDF文档的智能问答Agent，并配套开发了完整的 `Vue` + `Flask` 全栈Web系统。系统具备多文档管理、智能对话、历史记录等核心功能，为用户提供高效的文档交互体验。
+另外，项目整理了 `LangChain` 入门笔记，旨在帮助初学者真正从0开始学习如何设计构建一个MVP
 
 ## ✨ 核心功能
 
-![example](./image/3.png)
+![example](./image/case_show.png)
 
 ### 📄 多文档智能管理
 - **独立会话隔离**：每个文档创建独立的对话会话
@@ -36,8 +37,7 @@
 
 ## 🏗️ Agent系统架构
 
-本系统在问答的基础上，为了解决摘要类问题文本过长的限制，针对摘要问题采用`Map-Reduce`的方法。
-（详情可见![summarize_text](./langchain/tutorial/7-summarize_text.ipynb)）
+本系统在问答的基础上，为了解决摘要类问题文本过长的限制，针对摘要问题采用`Map-Reduce`的方法。其原理可见 [summarize_text.ipynb](./langchain/tutorial/7-summarize_text.ipynb) 
 
 ![agent_frame](./image/agent_frame.svg)
 
@@ -47,25 +47,26 @@
 ```
 PDF-QA-Agent/
 │
-├── frontend/                 # Vue前端应用
+├── frontend/                   # Vue前端应用
 │   ├── src/
 │   ├── public/
 │	├── package.json
 │   └── ......
 │
-├── PersonalKnowledgeBase/   # Flask后端服务
-│   ├── app.py               # 主应用入口
-│   ├── config.py            # 配置文件
-│   ├── requirements.txt     # Python依赖
-│   └── ......               # Agent核心逻辑
+├── PersonalKnowledgeBase/     # Flask后端服务
+│   ├── app.py                 # 主应用入口
+│   ├── config.py              # 配置文件
+│   ├── requirements.txt       # Python依赖
+│   └── ......                 # Agent核心逻辑
 │
-├── langchain/               # LangChain学习与实践（快速入门langchain、langgraph）
-│	├── config.py            # 代码实践说明文档
-│   └── tutorials/           # 官方文档实践代码
+├── langchain/                 # LangChain学习与实践（快速入门langchain、langgraph）
+│	├── Tutorial.md            # agent开发入门知识说明文档
+│	├── PromptEngineering.md   # 提示词工程技巧
+│   └── tutorials/             # langchian官方项目实践
 │
-├── image/                   # 项目截图与素材
-├── Guide-AutoDL.md          # 云服务器部署指南
-└── README.md                # 项目说明文档
+├── image/                     # 项目截图与素材
+├── Guide-AutoDL.md            # 云服务器部署指南
+└── README.md                  # 项目说明文档
 ```
 
 
@@ -174,12 +175,14 @@ VITE v7.1.9  ready in 1359 ms
 ## 🔮 未来规划
 
 - [ ] **数据库升级**：使用专业数据库替代浏览器缓存
+- [x] **多文档支持**：增加支持文档的类型，如doc、markdown等
+- [ ] **流式输出**：让模型回答流式输出，提升用户体验
 - [ ] **多文档分析**：实现跨文档对比和关联分析
-- [ ] **非结构文档解析**：提取、识别pdf中的图片、表格等
 - [ ] **智能索引**：构建文档内容索引，提升检索效率
 - [ ] **文档分类**：自动分类文档并提供引导式提问
 - [ ] **GPU加速**：完善AutoDL云服务器部署指南
 - [ ] **视频教程**：录制详细的使用和开发教程
+- [ ] **提示词工程**：迭代优化提示词，提高模型表现
 
 ## 🛠️ 技术栈
 

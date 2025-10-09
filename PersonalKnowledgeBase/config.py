@@ -19,11 +19,12 @@ class Args:
         self.use_model_way = 'local'
         self.CHROMA_PERSIST_DIR = "CHROMA_PERSIST"
         self.UPLOAD_FOLDER = "UPLOAD_FOLDER"
+        self.for_test = False
 
 
 args = Args()
 
-os.environ['LANGSMITH_TRACING'] = 'False'
+os.environ['LANGSMITH_TRACING'] = 'True'
 llm = None
 if args.use_model_way == 'api':
     os.environ.get('GOOGLE_API_KEY')
@@ -39,8 +40,11 @@ embeddings = HuggingFaceEmbeddings(
     model_name="D:/PersonalLearning/20250926_LangChian/PersonalKnowledgeBase/sentence-transformers-all-mpnet-base-v2"
 )
 
-vector_store = Chroma(
-    collection_name="example_collection",
-    embedding_function=embeddings,
-    persist_directory="./data/chroma_langchain_db",
-)
+
+def get_vector_store():
+    vector_store = Chroma(
+        collection_name="example_collection",
+        embedding_function=embeddings,
+        persist_directory="./data/chroma_langchain_db",
+    )
+    return vector_store

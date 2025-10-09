@@ -1,11 +1,14 @@
 from prompts.qa import qa_prompt
-from config import llm
-from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.memory import MemorySaver
-from ingestion.ingest_pdf import ingest_pdf_chunks
+from config import llm, get_vector_store, Args
+from ingestion.get_file_chunks import ingest_file_chunks
 
-vector_store = None
+from langchain_core.tools import tool
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import create_react_agent
+
+
+args = Args()
+
 
 @tool(response_format='content')
 def retrieve(query: str):
@@ -17,22 +20,26 @@ def retrieve(query: str):
     return retrieved_contents
 
 
-def build_qa_agent(VectorStore):
+def build_qa_agent(VectorStore, test=True):
     global vector_store
     vector_store = VectorStore
-    memory = MemorySaver()
-    agent_executor = create_react_agent(llm, [retrieve], checkpointer=memory)
+    if args.for_test:
+        memory = MemorySaver()
+        agent_executor = create_react_agent(llm, [retrieve], memory)
+    else:
+        agent_executor = create_react_agent(llm, [retrieve])
 
     return agent_executor
 
 
 if __name__ == '__main__':
-    docs = ingest_pdf_chunks('../data/example.pdf')
+    docs = ingest_file_chunks('../data/2024190948.pdf')
+    vector_store = get_vector_store()
     _ = vector_store.add_documents(docs)
-    app = build_qa_agent()
+    app = build_qa_agent(vector_store, test=True)
     config = {"configurable": {'thread_id': '0001'}}
     for event in app.stream(
-            {"messages": [{"role": "user", "content": 'k-means算法中的k如何选择？'}]},
+            {"messages": [{"role": "user", "content": 'how to select k in k-means algorithm'}]},
             stream_mode="values",
             config=config,
     ):

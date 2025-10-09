@@ -7,9 +7,10 @@ import uuid
 import logging
 from langchain_community.vectorstores import Chroma
 import chromadb
+import threading
 
 from config import embeddings, Args
-from ingestion.ingest_pdf import ingest_pdf_chunks
+from ingestion.get_file_chunks import ingest_file_chunks
 from graphs.orchestrator import build_orchestrator
 nest_asyncio.apply()
 
@@ -94,10 +95,10 @@ def upload_pdf():
 
     # Ingest and chunk PDF into documents (your helper)
     try:
-        docs = ingest_pdf_chunks(save_path)
+        docs = ingest_file_chunks(save_path)
     except Exception as e:
-        logger.exception("Failed to ingest PDF: %s", e)
-        return jsonify({"error": "Failed to ingest PDF", "details": str(e)}), 500
+        logger.exception("Failed to ingest file: %s", e)
+        return jsonify({"error": "Failed to ingest file", "details": str(e)}), 500
 
     # create a new session
     session_id = str(uuid.uuid4())
@@ -134,6 +135,23 @@ def upload_pdf():
     }), 200
 
 
+# Create a persistent event loop in a background thread
+background_loop = asyncio.new_event_loop()
+
+
+def loop_thread(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+
+threading.Thread(target=loop_thread, args=(background_loop,), daemon=True).start()
+
+
+def run_async(coro):
+    """Submit coroutine to the persistent event loop thread and wait for result."""
+    future = asyncio.run_coroutine_threadsafe(coro, background_loop)
+    return future.result()
+
 @app.route("/ask", methods=["POST"])
 def ask_question():
     """
@@ -164,16 +182,12 @@ def ask_question():
         result = await app_agent.ainvoke(state, config)
         return result
 
-    # Run asynchronous agent invocation safely
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(run_agent())
+        result = run_async(run_agent())
     except Exception as e:
-        logger.exception("Agent run failed: %s", e)
-        return jsonify({"error": "Agent execution failed", "details": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "agent execution failed", "details": str(e)}), 500
 
     if result['task'] == 'summarize':
         answer = result['final_summary']

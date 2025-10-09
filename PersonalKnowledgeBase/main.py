@@ -1,13 +1,13 @@
 import asyncio
-from config import llm, embeddings, Args
-from ingestion.ingest_pdf import ingest_pdf_chunks
+from config import llm, embeddings, Args, get_vector_store
+from ingestion.get_file_chunks import ingest_file_chunks
 from graphs.orchestrator import build_orchestrator
 
-from config import vector_store
 
 async def main(args):
     # 1. 提取pdf内容
-    docs = ingest_pdf_chunks(args.pdf_file_path)
+    docs = ingest_file_chunks(args.pdf_file_path)
+    vector_store = get_vector_store()
     _ = vector_store.add_documents(docs)
 
     # 2. 获取agent

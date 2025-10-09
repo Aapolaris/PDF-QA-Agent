@@ -3,8 +3,8 @@
     <h2>📁 Documents</h2>
 
     <div class="upload-section">
-      <input type="file" ref="fileInput" @change="onFileChange" accept="application/pdf" hidden />
-      <button @click="$refs.fileInput.click()">+ Upload PDF</button>
+      <input type="file" ref="fileInput" @change="onFileChange" accept=".pdf, .doc, .docx, .md" hidden />
+      <button @click="$refs.fileInput.click()">+ Upload file</button>
       <p v-if="message" class="upload-message">{{ message }}</p>
     </div>
 
@@ -42,6 +42,17 @@ export default {
     async onFileChange(e) {
       const file = e.target.files[0]
       if (!file) return
+
+      const allowedExtensions =['.pdf', '.doc', '.docx', '.md']
+      const fileName = file.name.toLowerCase()
+      const isAllowed = allowedExtensions.some(ext => fileName.endsWith(ext))
+      if (!isAllowed) {
+        this.message = "❌ Unsupported file type. Please upload PDF, DOC, DOCX, or MD."
+        setTimeout(() => (this.message=""), 3000)
+        e.target.value = ''
+        return
+      }
+
       const formData = new FormData()
       formData.append("file", file)
       this.message = "Uploading..."

@@ -2,18 +2,16 @@ import asyncio
 
 from prompts.summary import map_prompt, reduce_prompt
 from utils.types import SummaryOverallState, SummaryState
-from config import llm, Args
+from config import llm, Args, get_vector_store
 from langgraph.types import Send
 from langchain_core.documents import Document
 from langchain.chains.combine_documents.reduce import split_list_of_docs, acollapse_docs
 from typing import List
 from langgraph.graph import START, END, StateGraph
-from ingestion.ingest_pdf import ingest_pdf_chunks
+from ingestion.get_file_chunks import ingest_file_chunks
 
 args = Args()
 # semaphore = asyncio.Semaphore(3)
-
-vector_store = None
 
 
 async def generate_summary(state: SummaryState):
@@ -91,11 +89,14 @@ def build_summary_graph(VectorStore):
 
 
 async def test():
-    docs = ingest_pdf_chunks('../data/example.pdf')
+    docs = ingest_file_chunks('../data/example.pdf')
     print(f"there are {len(docs)} documents after chunk")
 
+    global vector_store
+    if args.for_test:
+        vector_store = get_vector_store()
     _ = vector_store.add_documents(docs)
-    app = build_summary_graph()
+    app = build_summary_graph(vector_store)
     step = None
     async for step in app.astream(
             {"contents": [doc.page_content for doc in docs]},
