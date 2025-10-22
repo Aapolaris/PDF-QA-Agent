@@ -1,28 +1,20 @@
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
+import os
 
 
-deepseek = ChatOllama(
-    base_url="http://localhost:11434",
-    model="deepseek-r1:1.5b"
-)
+session = {}
 
 
-# 初始化对话历史
-messages = [
-    HumanMessage(content="你好！"),
-    AIMessage(content="你好！有什么可以帮助你的？"),
-    HumanMessage(content="推荐一本科幻小说。")
-]
+def func1():
+    print(session[1])
 
-# query = ''
-# while query != 'q':
-#     response = deepseek.invoke(ChatPromptTemplate.from_template(messages[-1]))
-#     print('AI: ', response.content)
-#     messages.append(AIMessage(content=response.content))
-#     query = input('Human: (输入"q"退出)')
-#     messages.append(HumanMessage(content=query))
 
-response = deepseek.invoke('你好')
-print('AI: ', response.content)
+def func2():
+    global session
+    session = {1: 3}
+
+
+if __name__ == '__main__':
+    # func2()
+    # func1()
+    val = os.environ.get("MYSQL_PASSWORD")
+    print(val)

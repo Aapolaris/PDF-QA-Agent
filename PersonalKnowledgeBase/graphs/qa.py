@@ -11,11 +11,22 @@ args = Args()
 
 
 @tool(response_format='content')
-def retrieve(query: str):
-    """ retrieve information related to the query """
-    retrieved_docs = vector_store.similarity_search(query, k=2)  # 取连两个最相似的文档
+def retrieve_docs(query: str):
+    """ retrieve information in passage related to the query """
+    retrieved_docs = vector_store.similarity_search(query, k=2, filter={"type": "documents"})  # 取连两个最相似的文档
     retrieved_contents = "\n\n".join(
         f"Content: {doc.page_content}\n\n" for doc in retrieved_docs
+    )
+    return retrieved_contents
+
+
+@tool(response_format='content')
+def retrieve_long_term_memory(query: str):
+    """retrieve the long term memory related to the query """
+    retrieved = vector_store.similarity_search(query, k=2, filter={"type": "memory"})
+    retrieved_contents = "\n\n".join(
+        f"the key information about the long term memory:\n\n{content}"
+        for content in retrieved
     )
     return retrieved_contents
 
@@ -25,9 +36,9 @@ def build_qa_agent(VectorStore, test=True):
     vector_store = VectorStore
     if args.for_test:
         memory = MemorySaver()
-        agent_executor = create_react_agent(llm, [retrieve], memory)
+        agent_executor = create_react_agent(llm, [retrieve_docs, retrieve_long_term_memory], memory)
     else:
-        agent_executor = create_react_agent(llm, [retrieve])
+        agent_executor = create_react_agent(llm, [retrieve_docs, retrieve_long_term_memory])
 
     return agent_executor
 

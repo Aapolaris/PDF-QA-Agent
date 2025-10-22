@@ -13,7 +13,9 @@
 **LangChain**：一个大语言模型的开发框架。旨在帮助开发者快速构建基于大预言模型的端到端应用程序或工作流程。利用LangChain搭建一个RAG应用的流程图如下
 
 > 官方文档：
+> 
 > 🔗 [欢迎来到 LangChain](https://lagnchain.readthedocs.io/en/stable/index.html) 
+> 
 > 🔗 [介绍 |🦜️🔗 LangChain](https://python.langchain.com/docs/introduction/) 
 
 ![langchain-rag](./tutorial/img/rag_frame.png)
@@ -267,7 +269,10 @@ RAG 的两个核心部分：检索和生成。
 > 📖 **说明** 📖
 > 
 > 本篇笔记：
+> 
 > [二、提示词工程](#chapter-2) 参考自 `OpenAI` 的官方课程——[ChatGPT Prompt Engineering for Developers - DeepLearning.AI](https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/) 
+> 
 > [四、构建RAG应用](#chapter-4) 参考自 `LangChain` 官方文档
+> 
 > 其余内容参考自 [动手学大模型应用开发](https://datawhalechina.github.io/llm-universe/#/) 
 > 

@@ -15,7 +15,7 @@ def format_chat_history(history):
     if not history:
         return "No prior conversation."
     try:
-        content = "\n".join(f"{msg.type}: {msg.content}\n" for msg in history)
+        content = "\n".join(f"{msg.type}: {msg.content}\n" for msg in history[-10:])
     except Exception as e:
         print(history)
     return content
@@ -43,7 +43,10 @@ def build_orchestrator(vector_store):
         result = await summary_graph.ainvoke({
             'contents': contents
         })
-        return {'final_summary': result['final_summary']}
+        return {
+            'task': 'summarize',
+            'final_summary': result['final_summary'],
+        }
 
     async def run_qa_task(state: OrchestratorState):
         prompt = qa_prompt.invoke({
@@ -52,6 +55,7 @@ def build_orchestrator(vector_store):
         })
         result = await qa_agent.ainvoke({'messages': prompt.to_messages()})
         return {
+            'task': 'qa',
             'final_answer': result['messages'][-1].content,
             'history': [HumanMessage(content=state["query"]), result["messages"][-1]]
         }

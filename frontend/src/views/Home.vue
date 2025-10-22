@@ -66,12 +66,16 @@ export default {
             session_id: s.session_id,
             title: s.filename,
             filename: s.filename,
-            messages: Array(s.messages || 0).fill({}) // 简化处理
+            messages: s.messages || []
           }))
+          console.log("后端返回的第一条会话消息：", res.data.sessions[0].messages)
+
           if (this.sessions.length) this.currentSessionId = this.sessions[0].session_id
+          console.log('成功从后端获取会话列表');
         } else {
           // 后端没有会话，回退到本地存储
           this.loadFromLocalStorage()
+          console.log('从本地存储获取会话列表');
         }
       } catch (error) {
         console.error('Failed to load sessions from backend:', error)

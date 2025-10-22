@@ -5,11 +5,12 @@ import asyncio
 import nest_asyncio
 import uuid
 import logging
-from langchain_community.vectorstores import Chroma
-import chromadb
 import threading
+from langchain_core.messages import AIMessage, HumanMessage
 
-from config import embeddings, Args
+from config import Args
+from utils.database_operation import (load_data_from_mysql, create_chroma_for_docs, save_conversation_to_mysql,
+                                      delete_session_in_mysql, delete_session_in_chroma)
 from ingestion.get_file_chunks import ingest_file_chunks
 from graphs.orchestrator import build_orchestrator
 nest_asyncio.apply()
@@ -28,7 +29,7 @@ os.makedirs(args.CHROMA_PERSIST_DIR, exist_ok=True)
 #   "app_agent": <agent instance>,
 #   "docs": <list of docs>,
 #   "history": [ {role, content, ...}, ... ],
-#   "metadata": {filename, uploaded_at}
+#   "metadatas": {filename, uploaded_at}
 # }
 SESSIONS = {}
 
@@ -36,34 +37,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def create_chroma_for_docs(docs, session_id):
-    """
-    Create (or reuse) a Chroma collection for this session and add documents.
-    :param docs:
-    :param session_id:
-    :return:
-    """
-    persist_dir = args.CHROMA_PERSIST_DIR
-
-    chroma_vs = Chroma.from_documents(
-        documents=docs,
-        embedding=embeddings,
-        collection_name=session_id,
-        persist_directory=persist_dir,
-    )
-
-    try:
-        chroma_vs.persist()
-    except Exception:
-        pass
-    return chroma_vs
+def load_data():
+    """initialize the SESSIONS"""
+    SESSIONS = load_data_from_mysql()
+    for session_id, session in SESSIONS.items():
+        session["app_agent"] = build_agent_for_session(session["vector_store"])
+    return SESSIONS
 
 
-def build_agent_for_session(vector_store, session_id):
+def build_agent_for_session(vector_store):
     """
     Try to build an orchestrator/agent that uses the per-session vector_store.
     :param vector_store:
-    :param session_id:
     :return:
     """
     try:
@@ -112,7 +97,7 @@ def upload_pdf():
 
     # Build the agent for this session (attempt to pass vector_store)
     try:
-        agent = build_agent_for_session(vector_store, session_id)
+        agent = build_agent_for_session(vector_store)
     except Exception as e:
         logger.exception("Failed to build agent: %s", e)
         return jsonify({"error": "Failed to build agent", "details": str(e)}), 500
@@ -123,7 +108,7 @@ def upload_pdf():
         "app_agent": agent,
         "docs": docs,
         "history": [],
-        "metadata": {"filename": filename}
+        "metadatas": {"filename": filename}
     }
     logger.info("Created session %s for file %s (%d docs)", session_id, filename, len(docs))
 
@@ -151,6 +136,7 @@ def run_async(coro):
     """Submit coroutine to the persistent event loop thread and wait for result."""
     future = asyncio.run_coroutine_threadsafe(coro, background_loop)
     return future.result()
+
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
@@ -194,18 +180,17 @@ def ask_question():
     else:
         answer = result['final_answer']
 
-    # Save history (keep minimal)
-    try:
-        session["history"].append({"role": "user", "content": question})
-        session["history"].append({"role": "assistant", "content": answer})
-    except Exception:
-        # In case history is not list or append fails
-        session["history"] = session.get("history", []) + [
-            {"role": "user", "content": question},
-            {"role": "assistant", "content": answer}
-        ]
-
     logger.info("Session %s answered: %s", session_id, answer[:120].replace("\n", " "))
+
+    # Save history (keep minimal)
+    session["history"] = session.get("history", []) + [
+        HumanMessage(content=question),
+        AIMessage(content=answer),
+    ]
+
+    result = save_conversation_to_mysql(session_id, session)
+    if result is not None:
+        session['vector_store'] = result
 
     return jsonify({"answer": answer}), 200
 
@@ -215,12 +200,15 @@ def list_sessions():
     """
     Return a list of active sessions (id + metadata)
     """
+    global SESSIONS
+    SESSIONS = load_data()
+    word_map = {'ai': 'assistant', 'human': 'user'}
     out = []
     for sid, s in SESSIONS.items():
         out.append({
             "session_id": sid,
-            "filename": s.get("metadata", {}).get("filename"),
-            "messages": len(s.get("history", []))
+            "filename": s.get("metadatas", {}).get("filename"),
+            "messages": [{"role": word_map[msg.type], "content": msg.content} for msg in s['history']]
         })
     return jsonify({"sessions": out}), 200
 
@@ -239,27 +227,13 @@ def delete_session():
     if session_id not in SESSIONS:
         return jsonify({"error": "Unknown session_id"}), 400
 
-    logger.info("Deleting session: %s", session_id)
-
-    # 更彻底的 Chroma 集合删除
-    try:
-        persist_dir = args.CHROMA_PERSIST_DIR
-
-        client = chromadb.PersistentClient(path=persist_dir)
-        try:
-            client.delete_collection(session_id)
-            logger.info("Successfully deleted Chroma collection: %s", session_id)
-        except Exception as e:
-            logger.warning("Could not delete collection via client: %s", e)
-
-    except Exception as e:
-        logger.exception("Error while trying to clean vector store for session %s", session_id)
-        # 不返回错误，继续删除会话信息
-
-    # 移除会话入口
-    del SESSIONS[session_id]
-
+    delete_session_in_mysql(session_id)
+    logging.info("Deleting specific session from mysql")
+    delete_session_in_chroma(session_id)
+    logging.info("Deleting specific session from chroma")
+    del SESSIONS[session_id]  # 移除会话入口
     logger.info("Successfully deleted session: %s", session_id)
+
     return jsonify({"message": "Session deleted"}), 200
 
 

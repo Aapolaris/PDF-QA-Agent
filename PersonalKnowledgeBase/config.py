@@ -15,16 +15,19 @@ class Args:
         self.max_token = 1500
         self.chunk_size = 1500
         self.chunk_overlap = 50
-        self.pdf_file_path = './data/example.pdf'
-        self.use_model_way = 'local'
-        self.CHROMA_PERSIST_DIR = "CHROMA_PERSIST"
-        self.UPLOAD_FOLDER = "UPLOAD_FOLDER"
+        self.pdf_file_path = 'data/example.docx'
+        self.use_model_way = 'api'
+        self.CHROMA_PERSIST_DIR = "data/CHROMA_PERSIST"
+        self.UPLOAD_FOLDER = "data/UPLOAD_FOLDER"
         self.for_test = False
+        self.mysql_user = 'root'
+        self.mysql_password = os.environ.get('MYSQL_PASSWORD')
+        self.mysql_database = 'qa_agent_mvp'
 
 
 args = Args()
 
-os.environ['LANGSMITH_TRACING'] = 'True'
+# os.environ['LANGSMITH_TRACING'] = 'True'
 llm = None
 if args.use_model_way == 'api':
     os.environ.get('GOOGLE_API_KEY')

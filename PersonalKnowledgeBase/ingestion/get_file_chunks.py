@@ -14,17 +14,20 @@ args = Args()
 
 def ingest_file_chunks(file_name):
     if file_name.endswith('.pdf'):
-        return ingest_pdf_chunks(file_name)
+        docs = ingest_pdf_chunks(file_name)
     elif file_name.endswith('.md'):
-        return ingest_md_chunks(file_name)
+        docs = ingest_md_chunks(file_name)
     elif file_name.endswith(('doc', 'docx')):
-        return ingest_word_documents(file_name)
+        docs = ingest_word_documents(file_name)
+    for doc in docs:
+        doc.metadata["type"] = "documents"
+    return docs
 
 
 def ingest_pdf_chunks(pdf_file) -> List[Document]:
     """使用UnstructuredPDFLoader 或 PyPDFLoader解析pdf文档"""
     try:
-        loader = UnstructuredPDFLoader(pdf_file)  # 在一些复杂文档比如./data/2024190948.pdf中表现较好
+        loader = UnstructuredPDFLoader(pdf_file)
         print("use UnstructuredPDFLoader")
     except:
         loader = PyPDFLoader(pdf_file)

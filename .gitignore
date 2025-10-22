@@ -1,2 +1,5 @@
 PersonalKnowledgeBase/sentence-transformers-all-mpnet-base-v2
 langchain/tutorial/embedding_model
+PersonalKnowledgeBase/data/CHROMA_PERSIST
+PersonalKnowledgeBase/data/UPLOAD_FOLDER
+PersonalKnowledgeBase/test.py
